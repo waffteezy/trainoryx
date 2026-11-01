@@ -3,7 +3,7 @@
 **Document:** Database Reference  
 **Project:** Trainoryx  
 **Version:** 1.0  
-**Status:** Specification Draft — Pending Prisma Implementation Review  
+**Status:** Implemented Baseline — Prisma schema validated; initial migration applied and verified
 **Database:** PostgreSQL  
 **ORM:** Prisma ORM 7  
 **Database Name:** trainoryx_v2
@@ -27,7 +27,7 @@ It serves as the reference for:
 
 The Prisma schema must follow this specification unless an intentional change is reviewed and approved.
 
-This document describes the intended database design. It does not certify that a Prisma schema or migration has been validated.
+The approved schema is implemented in `prisma/schema.prisma` and has passed Prisma validation. The initial migration is present and applied to the Neon `trainoryx_v2` database. This document remains the approved contract; the actual Prisma schema and applied migrations define the implemented structure.
 
 ---
 
@@ -1195,9 +1195,9 @@ A generated Prisma Client is not proof that database constraints or business rul
 
 ---
 
-## 16. Database Review Checklist
+## 16. Database Change Review
 
-Before the first migration:
+Before a future schema migration:
 
 - [ ] All 18 models are reviewed.
 - [ ] All model fields and types are reviewed.
@@ -1221,19 +1221,19 @@ Before the first migration:
 | Area | Status |
 |---|---|
 | Coach-only data model | Approved |
-| 18-model baseline | Proposed |
+| 18-model baseline | Implemented |
 | Assignment behavior | Approved |
 | Independent measurements | Approved |
 | Historical snapshots | Approved |
 | Primary assignment rules | Approved |
 | Field definitions | Documented |
 | Relationships | Documented |
-| Indexes | Proposed |
-| PostgreSQL constraints | Pending implementation review |
-| Prisma schema | Pending |
-| Prisma validation | Pending |
-| Neon connection | Not configured |
-| Initial migration | Not created |
+| Indexes | Implemented and reviewed |
+| PostgreSQL constraints | Implemented and reviewed |
+| Prisma schema | Implemented |
+| Prisma validation | Passed |
+| Neon connection | Configured and verified |
+| Initial migration | Applied and verified |
 
 ---
 
