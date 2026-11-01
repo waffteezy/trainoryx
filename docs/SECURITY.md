@@ -333,7 +333,7 @@ Rules:
 - Use hosting-provider secret management for deployed environments.
 - Rotate credentials if they are accidentally exposed.
 
-The local foundation uses Neon `trainoryx_v2`, with `DATABASE_URL` for pooled runtime connections and `DIRECT_URL` for migration tooling. The Firebase client and Admin SDK foundation is configured; authentication flows are not implemented. The Admin service-account JSON remains outside the repository and is referenced by `FIREBASE_SERVICE_ACCOUNT_PATH`.
+The local foundation uses Neon `trainoryx_v2`, with `DATABASE_URL` for pooled runtime connections and `DIRECT_URL` for migration tooling. Firebase client authentication, verified server sessions, and coach provisioning are implemented. The Admin service-account JSON remains outside the repository and is referenced by `FIREBASE_SERVICE_ACCOUNT_PATH`.
 
 ### 8.4 GitHub Protection
 

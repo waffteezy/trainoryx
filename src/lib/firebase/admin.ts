@@ -27,7 +27,7 @@ function loadServiceAccount(): ServiceAccount {
 
   const serviceAccountPath = isAbsolute(configuredPath)
     ? configuredPath
-    : resolve(process.cwd(), configuredPath);
+    : resolve(/* turbopackIgnore: true */ process.cwd(), configuredPath);
 
   let fileContents: string;
 

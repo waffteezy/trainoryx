@@ -656,10 +656,10 @@ Do not change core architecture simply because a newer library or framework is a
 | Database connection | Neon `trainoryx_v2` configured and verified |
 | Initial migration | Applied and verified |
 | Firebase integration | Client and Admin SDK foundation configured |
-| Authentication | Not implemented |
-| UI implementation | Pending |
+| Authentication | Firebase client flows, server sessions, and coach provisioning implemented |
+| UI implementation | Authentication UI implemented; dashboard pending |
 | Deployment provider | Pending proof of concept |
-| Automated testing | Pending setup |
+| Automated testing | Focused authentication tests added; broader suite pending |
 
 ---
 
