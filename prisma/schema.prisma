@@ -1,0 +1,423 @@
+// Trainoryx V2 database schema. Table and column names map to snake_case.
+// Prisma does not model partial unique indexes. Add these in the first SQL migration:
+// CREATE UNIQUE INDEX program_assignment_one_primary_active_per_client
+//   ON program_assignments (client_id) WHERE is_primary = true AND status = 'ACTIVE';
+// CREATE UNIQUE INDEX meal_plan_assignment_one_primary_active_per_client
+//   ON meal_plan_assignments (client_id) WHERE is_primary = true AND status = 'ACTIVE';
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ClientSex {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
+
+  @@map("client_sex")
+}
+
+enum ExperienceLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+
+  @@map("experience_level")
+}
+
+enum ClientStatus {
+  ACTIVE
+  INACTIVE
+
+  @@map("client_status")
+}
+
+enum ProgramStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+
+  @@map("program_status")
+}
+
+enum AssignmentStatus {
+  ACTIVE
+  COMPLETED
+  PAUSED
+  CANCELED
+
+  @@map("assignment_status")
+}
+
+enum MealPlanStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+
+  @@map("meal_plan_status")
+}
+
+enum CheckInStatus {
+  DRAFT
+  COMPLETED
+
+  @@map("check_in_status")
+}
+
+enum ScheduleEventType {
+  CHECK_IN
+  COACHING_CALL
+  PROGRAM_REVIEW
+  NUTRITION_REVIEW
+  OTHER
+
+  @@map("schedule_event_type")
+}
+
+enum ScheduleEventStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELED
+
+  @@map("schedule_event_status")
+}
+
+enum AdjustmentCategory {
+  TRAINING
+  NUTRITION
+
+  @@map("adjustment_category")
+}
+
+model User {
+  id                  String              @id @default(uuid()) @db.Uuid
+  firebaseUid         String              @unique @map("firebase_uid")
+  email               String              @unique
+  displayName         String              @map("display_name")
+  timezone            String              @default("Asia/Manila")
+  createdAt           DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime            @updatedAt @map("updated_at") @db.Timestamptz(3)
+  clients             ClientProfile[]
+  trainingPrograms    TrainingProgram[]
+  foodItems           FoodItem[]
+  mealPlans           MealPlan[]
+  scheduleEvents      ScheduleEvent[]
+  availabilityRules   AvailabilityRule[]
+  coachNotes          CoachNote[]
+  coachingAdjustments CoachingAdjustment[]
+
+  @@map("users")
+}
+
+model ClientProfile {
+  id                 String                @id @default(uuid()) @db.Uuid
+  coachId            String                @map("coach_id") @db.Uuid
+  fullName           String                @map("full_name")
+  email              String?
+  phone              String?
+  dateOfBirth        DateTime?             @map("date_of_birth") @db.Date
+  sex                ClientSex?
+  heightCm           Decimal?              @map("height_cm") @db.Decimal(6, 2)
+  primaryGoal        String?               @map("primary_goal")
+  experienceLevel    ExperienceLevel?      @map("experience_level")
+  status             ClientStatus          @default(ACTIVE)
+  createdAt          DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime              @updatedAt @map("updated_at") @db.Timestamptz(3)
+  coach              User                  @relation(fields: [coachId], references: [id], onDelete: Restrict)
+  nutritionProfile   NutritionProfile?
+  programAssignments ProgramAssignment[]
+  mealPlanAssignments MealPlanAssignment[]
+  measurements       Measurement[]
+  checkIns           CheckIn[]
+  scheduleEvents     ScheduleEvent[]
+  coachNotes         CoachNote[]
+  coachingAdjustments CoachingAdjustment[]
+
+  @@index([coachId, status])
+  @@index([coachId, fullName])
+  @@map("client_profiles")
+}
+
+model TrainingProgram {
+  id                 String              @id @default(uuid()) @db.Uuid
+  coachId            String              @map("coach_id") @db.Uuid
+  name               String
+  description        String?
+  goal               String?
+  experienceLevel    ExperienceLevel?    @map("experience_level")
+  durationWeeks      Int?                @map("duration_weeks")
+  status             ProgramStatus       @default(DRAFT)
+  createdAt          DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime            @updatedAt @map("updated_at") @db.Timestamptz(3)
+  coach              User                @relation(fields: [coachId], references: [id], onDelete: Restrict)
+  workoutDays        WorkoutDay[]
+  assignments        ProgramAssignment[]
+
+  @@index([coachId, status])
+  @@map("training_programs")
+}
+
+model WorkoutDay {
+  id          String           @id @default(uuid()) @db.Uuid
+  programId   String           @map("program_id") @db.Uuid
+  name        String
+  sortOrder   Int              @map("sort_order")
+  program     TrainingProgram  @relation(fields: [programId], references: [id], onDelete: Cascade)
+  exercises   WorkoutExercise[]
+
+  @@unique([programId, sortOrder])
+  @@map("workout_days")
+}
+
+model WorkoutExercise {
+  id             String     @id @default(uuid()) @db.Uuid
+  workoutDayId   String     @map("workout_day_id") @db.Uuid
+  name           String
+  sets           Int
+  repMin         Int        @map("rep_min")
+  repMax         Int        @map("rep_max")
+  restSeconds    Int?       @map("rest_seconds")
+  targetWeightKg Decimal?   @map("target_weight_kg") @db.Decimal(7, 2)
+  instructions   String?
+  sortOrder      Int        @map("sort_order")
+  workoutDay     WorkoutDay @relation(fields: [workoutDayId], references: [id], onDelete: Cascade)
+
+  @@unique([workoutDayId, sortOrder])
+  @@map("workout_exercises")
+}
+
+model ProgramAssignment {
+  id              String           @id @default(uuid()) @db.Uuid
+  programId       String           @map("program_id") @db.Uuid
+  clientId        String           @map("client_id") @db.Uuid
+  assignedAt      DateTime         @default(now()) @map("assigned_at") @db.Timestamptz(3)
+  startDate       DateTime?        @map("start_date") @db.Date
+  endDate         DateTime?        @map("end_date") @db.Date
+  status          AssignmentStatus @default(ACTIVE)
+  isPrimary       Boolean          @default(false) @map("is_primary")
+  snapshotVersion Int              @default(1) @map("snapshot_version")
+  programSnapshot Json             @map("program_snapshot")
+  program         TrainingProgram  @relation(fields: [programId], references: [id], onDelete: Restrict)
+  client          ClientProfile    @relation(fields: [clientId], references: [id], onDelete: Restrict)
+
+  @@index([clientId, status])
+  @@index([programId, status])
+  @@map("program_assignments")
+}
+
+model NutritionProfile {
+  id             String        @id @default(uuid()) @db.Uuid
+  clientId       String        @unique @map("client_id") @db.Uuid
+  calorieTarget  Int           @map("calorie_target")
+  proteinTarget  Int           @map("protein_target")
+  carbsTarget    Int           @map("carbs_target")
+  fatTarget      Int           @map("fat_target")
+  updatedAt      DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+  client         ClientProfile @relation(fields: [clientId], references: [id], onDelete: Restrict)
+
+  @@map("nutrition_profiles")
+}
+
+model FoodItem {
+  id                 String     @id @default(uuid()) @db.Uuid
+  coachId            String     @map("coach_id") @db.Uuid
+  name               String
+  servingLabel       String     @map("serving_label")
+  servingGrams       Decimal?   @map("serving_grams") @db.Decimal(8, 2)
+  caloriesPerServing Int        @map("calories_per_serving")
+  proteinG           Decimal    @map("protein_g") @db.Decimal(8, 2)
+  carbsG             Decimal    @map("carbs_g") @db.Decimal(8, 2)
+  fatG               Decimal    @map("fat_g") @db.Decimal(8, 2)
+  isArchived         Boolean    @default(false) @map("is_archived")
+  createdAt          DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+  coach              User       @relation(fields: [coachId], references: [id], onDelete: Restrict)
+  mealFoods          MealFood[]
+
+  @@index([coachId, isArchived])
+  @@map("food_items")
+}
+
+model MealPlan {
+  id                 String               @id @default(uuid()) @db.Uuid
+  coachId            String               @map("coach_id") @db.Uuid
+  name               String
+  description        String?
+  goal               String?
+  durationWeeks      Int?                 @map("duration_weeks")
+  targetCalories     Int?                 @map("target_calories")
+  targetProtein      Int?                 @map("target_protein")
+  targetCarbs        Int?                 @map("target_carbs")
+  targetFat          Int?                 @map("target_fat")
+  status             MealPlanStatus       @default(DRAFT)
+  createdAt          DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
+  coach              User                 @relation(fields: [coachId], references: [id], onDelete: Restrict)
+  meals              Meal[]
+  assignments        MealPlanAssignment[]
+
+  @@index([coachId, status])
+  @@map("meal_plans")
+}
+
+model Meal {
+  id          String     @id @default(uuid()) @db.Uuid
+  mealPlanId  String     @map("meal_plan_id") @db.Uuid
+  name        String
+  sortOrder   Int        @map("sort_order")
+  mealPlan    MealPlan   @relation(fields: [mealPlanId], references: [id], onDelete: Cascade)
+  mealFoods   MealFood[]
+
+  @@unique([mealPlanId, sortOrder])
+  @@map("meals")
+}
+
+model MealFood {
+  id                        String    @id @default(uuid()) @db.Uuid
+  mealId                    String    @map("meal_id") @db.Uuid
+  foodItemId                String    @map("food_item_id") @db.Uuid
+  quantity                  Decimal   @db.Decimal(8, 3)
+  foodNameSnapshot          String    @map("food_name_snapshot")
+  servingLabelSnapshot      String    @map("serving_label_snapshot")
+  servingGramsSnapshot      Decimal?  @map("serving_grams_snapshot") @db.Decimal(8, 2)
+  caloriesPerServingSnapshot Int      @map("calories_per_serving_snapshot")
+  proteinPerServingSnapshot Decimal   @map("protein_per_serving_snapshot") @db.Decimal(8, 2)
+  carbsPerServingSnapshot   Decimal   @map("carbs_per_serving_snapshot") @db.Decimal(8, 2)
+  fatPerServingSnapshot     Decimal   @map("fat_per_serving_snapshot") @db.Decimal(8, 2)
+  meal                      Meal      @relation(fields: [mealId], references: [id], onDelete: Cascade)
+  foodItem                  FoodItem  @relation(fields: [foodItemId], references: [id], onDelete: Restrict)
+
+  @@unique([mealId, foodItemId])
+  @@map("meal_foods")
+}
+
+model MealPlanAssignment {
+  id                String           @id @default(uuid()) @db.Uuid
+  mealPlanId        String           @map("meal_plan_id") @db.Uuid
+  clientId          String           @map("client_id") @db.Uuid
+  startDate         DateTime?        @map("start_date") @db.Date
+  endDate           DateTime?        @map("end_date") @db.Date
+  status            AssignmentStatus @default(ACTIVE)
+  isPrimary         Boolean          @default(false) @map("is_primary")
+  snapshotVersion   Int              @default(1) @map("snapshot_version")
+  mealPlanSnapshot  Json             @map("meal_plan_snapshot")
+  createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  mealPlan          MealPlan         @relation(fields: [mealPlanId], references: [id], onDelete: Restrict)
+  client            ClientProfile    @relation(fields: [clientId], references: [id], onDelete: Restrict)
+
+  @@index([clientId, status])
+  @@index([mealPlanId, status])
+  @@map("meal_plan_assignments")
+}
+
+model Measurement {
+  id               String        @id @default(uuid()) @db.Uuid
+  clientId         String        @map("client_id") @db.Uuid
+  recordedAt       DateTime      @map("recorded_at") @db.Timestamptz(3)
+  weightKg         Decimal?      @map("weight_kg") @db.Decimal(7, 2)
+  bodyFatPercent   Decimal?      @map("body_fat_percent") @db.Decimal(5, 2)
+  muscleMassKg     Decimal?      @map("muscle_mass_kg") @db.Decimal(7, 2)
+  chestCm          Decimal?      @map("chest_cm") @db.Decimal(7, 2)
+  waistCm          Decimal?      @map("waist_cm") @db.Decimal(7, 2)
+  hipsCm           Decimal?      @map("hips_cm") @db.Decimal(7, 2)
+  armCm            Decimal?      @map("arm_cm") @db.Decimal(7, 2)
+  thighCm          Decimal?      @map("thigh_cm") @db.Decimal(7, 2)
+  createdAt        DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  client           ClientProfile @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  checkIn          CheckIn?
+
+  @@index([clientId, recordedAt])
+  @@map("measurements")
+}
+
+model CheckIn {
+  id            String        @id @default(uuid()) @db.Uuid
+  clientId      String        @map("client_id") @db.Uuid
+  measurementId String?       @unique @map("measurement_id") @db.Uuid
+  checkInDate   DateTime      @map("check_in_date") @db.Timestamptz(3)
+  summary       String?
+  status        CheckInStatus @default(DRAFT)
+  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+  client        ClientProfile @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  measurement   Measurement?  @relation(fields: [measurementId], references: [id], onDelete: Restrict)
+
+  @@index([clientId, checkInDate])
+  @@map("check_ins")
+}
+
+model ScheduleEvent {
+  id          String             @id @default(uuid()) @db.Uuid
+  coachId     String             @map("coach_id") @db.Uuid
+  clientId    String?            @map("client_id") @db.Uuid
+  title       String
+  description String?
+  type        ScheduleEventType
+  startAt     DateTime           @map("start_at") @db.Timestamptz(3)
+  endAt       DateTime           @map("end_at") @db.Timestamptz(3)
+  timezone    String
+  status      ScheduleEventStatus @default(SCHEDULED)
+  createdAt   DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+  coach       User               @relation(fields: [coachId], references: [id], onDelete: Restrict)
+  client      ClientProfile?     @relation(fields: [clientId], references: [id], onDelete: Restrict)
+
+  @@index([coachId, startAt])
+  @@index([clientId, startAt])
+  @@map("schedule_events")
+}
+
+model AvailabilityRule {
+  id          String   @id @default(uuid()) @db.Uuid
+  coachId     String   @map("coach_id") @db.Uuid
+  weekday     Int
+  startMinute Int      @map("start_minute")
+  endMinute   Int      @map("end_minute")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  coach       User     @relation(fields: [coachId], references: [id], onDelete: Restrict)
+
+  @@index([coachId, weekday])
+  @@map("availability_rules")
+}
+
+model CoachNote {
+  id        String        @id @default(uuid()) @db.Uuid
+  coachId   String        @map("coach_id") @db.Uuid
+  clientId  String        @map("client_id") @db.Uuid
+  title     String
+  content   String
+  createdAt DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+  coach     User          @relation(fields: [coachId], references: [id], onDelete: Restrict)
+  client    ClientProfile @relation(fields: [clientId], references: [id], onDelete: Restrict)
+
+  @@index([coachId, clientId, createdAt])
+  @@map("coach_notes")
+}
+
+model CoachingAdjustment {
+  id             String            @id @default(uuid()) @db.Uuid
+  coachId        String            @map("coach_id") @db.Uuid
+  clientId       String            @map("client_id") @db.Uuid
+  category       AdjustmentCategory
+  title          String
+  details        String?
+  reason         String?
+  previousValues Json?              @map("previous_values")
+  newValues      Json?              @map("new_values")
+  effectiveAt    DateTime           @map("effective_at") @db.Timestamptz(3)
+  createdAt      DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  coach          User               @relation(fields: [coachId], references: [id], onDelete: Restrict)
+  client         ClientProfile      @relation(fields: [clientId], references: [id], onDelete: Restrict)
+
+  @@index([coachId, clientId, effectiveAt])
+  @@map("coaching_adjustments")
+}
