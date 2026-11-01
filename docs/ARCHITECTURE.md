@@ -1,6 +1,4 @@
-
-@'
-# Trainoryx — System Architecture
+﻿# Trainoryx — System Architecture
 
 **Document:** Architecture Reference  
 **Project:** Trainoryx  
@@ -239,6 +237,21 @@ The User record contains:
 - Creation and update timestamps.
 
 There is no client role or client authentication model in this release.
+
+### 5.3 Coach Registration
+
+Trainoryx uses open coach registration.
+
+- Anyone may register using email and password.
+- Firebase Authentication manages account creation and sign-in.
+- Email verification is required before protected app access.
+- Every registered account is a coach.
+- No role field, role selection, invitations, or admin approval.
+- A database User record is provisioned automatically for a verified Firebase identity.
+- Each coach has an independent workspace.
+- Client profiles are not application accounts.
+
+Registration and authentication should remain straightforward and appropriate for the portfolio project's scope.
 
 ---
 
@@ -662,4 +675,3 @@ Supporting documents:
 When implementation details conflict with this document, review the discrepancy before changing code or documentation.
 
 **End of Architecture Reference**
-'@ | Set-Content -Path "docs/ARCHITECTURE.md" -Encoding utf8

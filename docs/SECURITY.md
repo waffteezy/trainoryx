@@ -492,6 +492,17 @@ Security tests are required before shipping protected functionality.
 - Revoked tokens are rejected where revocation checking is required.
 - Authenticated coaches resolve to the correct database User.
 
+### Public Coach Registration
+
+- Registration is open to anyone.
+- Firebase Authentication handles email/password registration.
+- Email verification is required before protected application access.
+- Only verified Firebase identities may be provisioned as database Users.
+- Never accept coach IDs or ownership claims from browser input.
+- Each coach's records must remain isolated from other coaches.
+- Use Firebase's built-in authentication protections where practical.
+- Avoid custom approval, invitation, or account-management infrastructure.
+
 ### 14.2 Authorization Tests
 
 - Coach A cannot access Coach B's clients.

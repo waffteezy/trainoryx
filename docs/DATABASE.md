@@ -760,6 +760,18 @@ Rules:
 
 ---
 
+### Coach Account Provisioning
+
+- Firebase Authentication is the source of coach identity.
+- The User model stores the verified Firebase UID and coach profile information.
+- Create the database User record on first verified access.
+- Provisioning must be idempotent.
+- Each User owns their own client and coaching records.
+- No role field is required because every registered account is a coach.
+- No client User records are created.
+
+---
+
 ## 6. Enumerations
 
 The following enums define the allowed application states.
