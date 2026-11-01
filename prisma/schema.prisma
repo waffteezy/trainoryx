@@ -1,13 +1,10 @@
 // Trainoryx V2 database schema. Table and column names map to snake_case.
-// Prisma does not model partial unique indexes. Add these in the first SQL migration:
-// CREATE UNIQUE INDEX program_assignment_one_primary_active_per_client
-//   ON program_assignments (client_id) WHERE is_primary = true AND status = 'ACTIVE';
-// CREATE UNIQUE INDEX meal_plan_assignment_one_primary_active_per_client
-//   ON meal_plan_assignments (client_id) WHERE is_primary = true AND status = 'ACTIVE';
+// Primary active assignment uniqueness uses Prisma's partialIndexes preview feature.
 
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"
+  previewFeatures = ["partialIndexes"]
 }
 
 datasource db {
@@ -208,6 +205,7 @@ model ProgramAssignment {
 
   @@index([clientId, status])
   @@index([programId, status])
+  @@unique([clientId], where: raw("\"is_primary\" = true AND \"status\" = 'ACTIVE'"), map: "program_assignment_one_primary_active_per_client")
   @@map("program_assignments")
 }
 
@@ -313,6 +311,7 @@ model MealPlanAssignment {
 
   @@index([clientId, status])
   @@index([mealPlanId, status])
+  @@unique([clientId], where: raw("\"is_primary\" = true AND \"status\" = 'ACTIVE'"), map: "meal_plan_assignment_one_primary_active_per_client")
   @@map("meal_plan_assignments")
 }
 
